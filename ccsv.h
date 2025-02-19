@@ -158,7 +158,7 @@ int ccsv_parse(const char fp[], CCSV *ccsv, CCSV_Cell_Handler custom_f, void* pa
     while(ferror(f) == 0) {
         c = fgetc(f);
         if(c == ',' && !ignore_comma || c == '\n' || feof(f)) {
-            ccsv->buffer[cur + 1] = '\0';
+            ccsv->buffer[cur] = '\0';
             if(using_defaults) {
                 left = ccsv->column_offsets[col + 1] - ccsv->column_offsets[col] - num;
             } else {
