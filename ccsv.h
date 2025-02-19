@@ -154,7 +154,7 @@ int ccsv_parse(const char fp[], CCSV *ccsv, CCSV_Cell_Handler custom_f, void* pa
         ccsv->buffer = (char*)malloc(sizeof(char) * (ccsv->max_col_size + 1));
     }
     char c;
-    int col = 0, row = 0, cur = 0, num = 0, ignore_comma = 0, left = 0;
+    int col = 0, row = 0, cur = 0, num = 0, ignore_comma = 0, left = 0, result = 0;
     while(ferror(f) == 0) {
         c = fgetc(f);
         if(c == ',' && !ignore_comma || c == '\n' || feof(f)) {
@@ -162,7 +162,10 @@ int ccsv_parse(const char fp[], CCSV *ccsv, CCSV_Cell_Handler custom_f, void* pa
             if(using_defaults) {
                 left = ccsv->column_offsets[col + 1] - ccsv->column_offsets[col] - num;
             } else {
-                if(custom_f(ccsv, row, col, cur + 1, param)) return 1;
+                if((result = custom_f(ccsv, row, col, cur + 1, param))) {
+                    printf("\rCCSV: Custom function returned non-OK code, aborting...\n");
+                    break;
+                }
             }
             // memset(ccsv->buffer + cur + 1, 0, left - 1);
             cur = (cur + left) * (int)using_defaults;
@@ -187,8 +190,12 @@ int ccsv_parse(const char fp[], CCSV *ccsv, CCSV_Cell_Handler custom_f, void* pa
         return 1;
     }
     if(using_defaults) ccsv->buffer[ccsv->row_size * ccsv->rows] = '\0';
-    printf("\rCCSV: Parsing finished, parsed %d rows in total\n", row);
-    return 0;
+    if(!result) {
+        printf("\rCCSV: Parsing finished, parsed %d rows in total\n", row);
+    } else {
+        printf("\rCCSV: Parsing finished with an error, parsed %d rows in total\n", row);
+    }
+    return result;
 }
 
 // Wrapper around ccsv_calculate_sizes and ccsv_parse. Use it in case if you want default behavior. By default, each cell is stored as cstr in a buffer and is accessed by using pointer arithmetics
